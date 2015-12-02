@@ -1,5 +1,14 @@
 package main.java.io.github.cr3ahal0.hadoope.crawl;
 
+import edu.uci.ics.crawler4j.crawler.CrawlConfig;
+import edu.uci.ics.crawler4j.crawler.CrawlController;
+import edu.uci.ics.crawler4j.crawler.Page;
+import edu.uci.ics.crawler4j.crawler.WebCrawler;
+import edu.uci.ics.crawler4j.fetcher.PageFetcher;
+import edu.uci.ics.crawler4j.parser.HtmlParseData;
+import edu.uci.ics.crawler4j.robotstxt.RobotstxtConfig;
+import edu.uci.ics.crawler4j.robotstxt.RobotstxtServer;
+import edu.uci.ics.crawler4j.url.WebURL;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Mapper;
@@ -23,23 +32,88 @@ import java.util.regex.Pattern;
  */
 public class CrawlerMapper extends Mapper<LongWritable, Text, Text, Text> {
 
+
+    class Crawler extends WebCrawler {
+
+        private final Pattern FILTERS = Pattern.compile(".*(\\.(css|js|gif|jpg"
+                + "|png|mp3|mp3|zip|gz))$");
+
+        @Override
+        public boolean shouldVisit(Page referringPage, WebURL url) {
+            String href = url.getURL().toLowerCase();
+            return !FILTERS.matcher(href).matches()
+                    && href.startsWith("http://www.ics.uci.edu/");
+        }
+
+        /**
+         * This function is called when a page is fetched and ready
+         * to be processed by your program.
+         */
+        @Override
+        public void visit(Page page) {
+            String url = page.getWebURL().getURL();
+            System.out.println("URL: " + url);
+
+            if (page.getParseData() instanceof HtmlParseData) {
+                HtmlParseData htmlParseData = (HtmlParseData) page.getParseData();
+                Set<WebURL> links = htmlParseData.getOutgoingUrls();
+
+                Set<String> exist = results.get(url);
+                if (exist == null) {
+                    exist = new HashSet<String>();
+                    results.put(url, exist);
+                }
+
+                for(WebURL found : links) {
+                    results.get(url).add(found.getURL());
+                }
+            }
+        }
+    };
+
+    private static Map<String, Set<String>> results = new HashMap<String, Set<String>>();
+
     private final static int MAX_DEPTH = 20;
 
     private final static int MAX_ITER = 500;
 
-    private int nbRun = 0;
-
-    private URL baseUrl;
-
-    private static Map<String, Set<String>> results = new HashMap<String, Set<String>>();
-
-    private Set<String> explored = new HashSet<String>();
-
-    private boolean end = false;
-
     @Override
     public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
-        crawl("https://fr.wikipedia.org/wiki/Wikip%C3%A9dia:Accueil_principal", 0);
+        //crawl("https://fr.wikipedia.org/wiki/Wikip%C3%A9dia:Accueil_principal", 0);
+
+        String crawlStorageFolder = "./test";
+        int numberOfCrawlers = 7;
+
+        CrawlConfig config = new CrawlConfig();
+        config.setCrawlStorageFolder(crawlStorageFolder);
+        config.setMaxDepthOfCrawling(MAX_DEPTH);
+        config.setMaxPagesToFetch(MAX_ITER);
+        /*
+         * Instantiate the controller for this crawl.
+         */
+        PageFetcher pageFetcher = new PageFetcher(config);
+        RobotstxtConfig robotstxtConfig = new RobotstxtConfig();
+        RobotstxtServer robotstxtServer = new RobotstxtServer(robotstxtConfig, pageFetcher);
+        CrawlController controller = null;
+        try {
+            controller = new CrawlController(config, pageFetcher, robotstxtServer);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        /*
+         * For each crawl, you need to add some seed urls. These are the first
+         * URLs that are fetched and then the crawler starts following links
+         * which are found in these pages
+         */
+        controller.addSeed("https://fr.wikipedia.org/wiki/Wikip%C3%A9dia:Accueil_principal");
+
+        /*
+         * Start the crawl. This is a blocking operation, meaning that your code
+         * will reach the line after this only when crawling is finished.
+         */
+        controller.start(Crawler.class, numberOfCrawlers);
+
 
         //This is a very inconvenient solution since it requires to wait for an entire function execution before printing to context (WIP)
         //It is a very shitty (but temporary) solution since you have to fullfy HashMaps, Sets... to explore them and print their content
@@ -53,114 +127,5 @@ public class CrawlerMapper extends Mapper<LongWritable, Text, Text, Text> {
         }
     }
 
-    /**
-     * Crawl url until max. depth reached
-     * @param link the web address we want to explore
-     * @param depth the current depth
-     */
-    public void crawl(String link, int depth) {
-
-        //Do not continue if the limit of iterations has been crossed
-        if (end) {
-            return;
-        }
-
-        //Do not continue if we are too deep
-        if (depth > MAX_DEPTH) {
-            return;
-        }
-
-        //If this page has already been explored, we skipt it
-        if (explored.contains(link)) {
-            return;
-        }
-
-        explored.add(link);
-
-        try {
-
-            Set<String> found = new HashSet<String>();
-
-
-            /**
-             * TODO : get HTML string content from url
-             */
-
-            URL url = new URL(link);
-            if (baseUrl == null) {
-                baseUrl = url;
-            }
-
-
-            URLConnection conn = url.openConnection();
-            conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.4; en-US; rv:1.9.2.2) Gecko/20100316 Firefox/3.6.2");
-
-            BufferedReader br = new BufferedReader(
-                    new InputStreamReader(conn.getInputStream()));
-
-            String html;
-
-            nbRun++;
-            if (nbRun > MAX_ITER) {
-                System.out.println("Max iter. encountered");
-                end = true;
-                return;
-            }
-
-            //We consider crawling a page when she's available only
-            System.out.println("Crawling " + link + " ...");
-
-
-            while ((html = br.readLine()) != null) {
-
-                Pattern p = Pattern.compile("href=\"(.*?)\"");
-                Matcher m = p.matcher(html);
-
-                while (m.find()) {
-                    String got = m.group(1);
-                    if (got.startsWith("#") ||
-                        got.startsWith(":") ||
-                        got.startsWith("/")) {
-                        continue;
-                    }
-                    found.add(got);
-                }
-
-                for (String aUri : found) {
-
-                    Set<String> actual = results.get(aUri);
-                    if (actual == null) {
-                        actual = new HashSet<String>();
-                    }
-
-                    actual.add(link);
-                    results.put(aUri, actual);
-                    crawl(aUri, depth+1);
-                }
-
-            }
-
-            br.close();
-
-        } catch (MalformedURLException e) {
-            System.out.println("Strange url : "+ link);
-            e.printStackTrace();
-        } catch (IOException e) {
-            System.out.println("Unable to fetch : "+ link);
-            e.printStackTrace();
-        }
-
-    }
-
-    /**
-     * Print a notice about the result
-     */
-    public void notice() {
-        Set<String> keys = results.keySet();
-        for (String key : keys) {
-            Set<String> pages = results.get(key);
-            System.out.println(pages.size() + " pages linking to " + key);
-        }
-    }
 
 }

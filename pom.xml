@@ -98,6 +98,11 @@
             <artifactId>hadoop-mapreduce-client-core</artifactId>
             <version>2.2.0</version>
         </dependency>
+        <dependency>
+            <groupId>edu.uci.ics</groupId>
+            <artifactId>crawler4j</artifactId>
+            <version>4.1</version>
+        </dependency>
     </dependencies>
 
 </project>
