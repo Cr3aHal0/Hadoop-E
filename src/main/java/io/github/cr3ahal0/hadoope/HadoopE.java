@@ -148,7 +148,7 @@ public class HadoopE extends Configured implements Tool {
             if (!isCompleted) return 1;
         }
 
-        isCompleted = runRankOrdering(lastResultPath, "file/result");
+        isCompleted = runRankOrdering(lastResultPath, "files/result");
 
         if (!isCompleted) return 1;
         return 0;
