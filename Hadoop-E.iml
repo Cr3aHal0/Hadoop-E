@@ -95,10 +95,8 @@
     <orderEntry type="library" name="Maven: io.netty:netty:3.6.2.Final" level="project" />
     <orderEntry type="library" scope="TEST" name="Maven: junit:junit:4.10" level="project" />
     <orderEntry type="library" scope="TEST" name="Maven: org.hamcrest:hamcrest-core:1.1" level="project" />
-    <orderEntry type="library" name="Maven: edu.uci.ics:crawler4j:4.1" level="project" />
+    <orderEntry type="library" name="Maven: edu.uci.ics:crawler4j:4.2" level="project" />
     <orderEntry type="library" name="Maven: uk.org.lidalia:lidalia-slf4j-ext:1.0.0" level="project" />
-    <orderEntry type="library" name="Maven: org.apache.httpcomponents:httpclient:4.3.5" level="project" />
-    <orderEntry type="library" name="Maven: org.apache.httpcomponents:httpcore:4.3.2" level="project" />
     <orderEntry type="library" name="Maven: com.sleepycat:je:5.0.73" level="project" />
     <orderEntry type="library" name="Maven: org.apache.tika:tika-parsers:1.5" level="project" />
     <orderEntry type="library" name="Maven: org.apache.tika:tika-core:1.5" level="project" />
@@ -133,5 +131,7 @@
     <orderEntry type="library" name="Maven: org.gagravarr:vorbis-java-core:0.1" level="project" />
     <orderEntry type="library" name="Maven: com.googlecode.juniversalchardet:juniversalchardet:1.0.3" level="project" />
     <orderEntry type="library" name="Maven: com.uwyn:jhighlight:1.0" level="project" />
+    <orderEntry type="library" name="Maven: org.apache.httpcomponents:httpclient:4.5.1" level="project" />
+    <orderEntry type="library" name="Maven: org.apache.httpcomponents:httpcore:4.4.3" level="project" />
   </component>
 </module>

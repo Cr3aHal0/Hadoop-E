@@ -18,7 +18,7 @@ public class CalculateMapper extends Mapper<LongWritable, Text, Text, Text> {
         int pageTabIndex = value.find("\t");
 
         //Then locate the separator between the rank and all the linked links
-        int rankTabIndex = value.find(":", pageTabIndex+1);
+        int rankTabIndex = value.find("\t", pageTabIndex+1);
 
         // if there is no link, just skip it
         if(rankTabIndex < 0) {

@@ -35,7 +35,7 @@ public class CalculateReducer extends Reducer<Text, Text, Text, Text> {
                 continue;
             }
 
-            split = pageWithRank.split("\\t");
+            split = pageWithRank.split("\t");
 
             float pageRank = Float.valueOf(split[1]);
             int countOutLinks = Integer.valueOf(split[2]);

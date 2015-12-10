@@ -12,7 +12,7 @@ public class CrawlerReducer extends Reducer<Text, Text, Text, Text> {
 
     @Override
     public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
-        String pagerank = "1.0:";
+        String pagerank = "1.0\t";
 
         boolean first = true;
 
