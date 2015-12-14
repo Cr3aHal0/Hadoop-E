@@ -1,4 +1,4 @@
-# Hadoop-E
+# Hadoop-E ![Travis Complient](https://travis-ci.org/Cr3aHal0/Hadoop-E.svg?branch=master)
 Hadoop-E is an implementation of the PageRanking algorithm based on Hadoop that works better than Hadopi (you know, the french law)
 
 The goal of this project is to understand how pageranking works with Hadoop Apache solution.
