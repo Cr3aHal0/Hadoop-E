@@ -10,6 +10,7 @@ import main.java.io.github.cr3ahal0.hadoope.calc.CalculateReducer;
 import main.java.io.github.cr3ahal0.hadoope.crawl.Crawler;
 import main.java.io.github.cr3ahal0.hadoope.crawl.CrawlerMapper;
 import main.java.io.github.cr3ahal0.hadoope.crawl.CrawlerReducer;
+import main.java.io.github.cr3ahal0.hadoope.crawl.CrawlerPigReducer;
 import main.java.io.github.cr3ahal0.hadoope.rank.RankingMapper;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
@@ -93,6 +94,8 @@ public class HadoopE extends Configured implements Tool {
         String crawlStorageFolder = "files/in";
         int numberOfCrawlers = 7;
 
+		sc.close();
+
         String[] urls = url.split(",");
         List<CrawlController> controllers = new ArrayList<CrawlController>();
 
@@ -134,27 +137,49 @@ public class HadoopE extends Configured implements Tool {
 
     @Override
     public int run(String[] args) throws Exception {
-        boolean isCompleted = runCrawler("files/in", "files/ranking/iter00");
+
+        Scanner sc = new Scanner(System.in);
+		int choix = -1;
+	
+		while (choix < 1 || choix > 2 ) {
+			System.out.println("What kind of PageRank ?");
+			System.out.println("1) Hadoop MapReduce");
+			System.out.println("2) Pig");
+
+    		String str = sc.nextLine();
+	    	choix = Integer.valueOf(str);
+		}
+
+		sc.close();
+	
+        boolean isCompleted = runCrawler("files/in", "files/ranking/iter00", (choix == 1));
         if (!isCompleted) return 1;
 
-        String lastResultPath = null;
+		if (choix == 1) {
+		    String lastResultPath = null;
 
-        for (int runs = 0; runs < 5; runs++) {
-            String inPath = "files/ranking/iter" + nf.format(runs);
-            lastResultPath = "files/ranking/iter" + nf.format(runs + 1);
+		    for (int runs = 0; runs < 10; runs++) {
+		        String inPath = "files/ranking/iter" + nf.format(runs);
+		        lastResultPath = "files/ranking/iter" + nf.format(runs + 1);
 
-            isCompleted = runRankCalculation(inPath, lastResultPath);
+		        isCompleted = runRankCalculation(inPath, lastResultPath);
 
-            if (!isCompleted) return 1;
-        }
+		        if (!isCompleted) return 1;
+		    }
 
-        isCompleted = runRankOrdering(lastResultPath, "files/result");
+		    isCompleted = runRankOrdering(lastResultPath, "files/result");
 
-        if (!isCompleted) return 1;
+		    if (!isCompleted) return 1;
+		}
+		else
+		{
+			System.out.println("Pig preparation is over now, you can now use the command : pig -Dpython.cachedir=/home/{myuser}/tmp pagerank.py");
+		}
+
         return 0;
     }
 
-    public boolean runCrawler(String inputPath, String outputPath) throws IOException, ClassNotFoundException, InterruptedException {
+    public boolean runCrawler(String inputPath, String outputPath, boolean isHadoop) throws IOException, ClassNotFoundException, InterruptedException {
         Configuration conf = new Configuration();
 
         Job xmlHakker = Job.getInstance(conf, "crawler");
@@ -170,9 +195,15 @@ public class HadoopE extends Configured implements Tool {
         FileOutputFormat.setOutputPath(xmlHakker, new Path(outputPath));
         xmlHakker.setOutputFormatClass(TextOutputFormat.class);
 
-        xmlHakker.setOutputKeyClass(Text.class);
-        xmlHakker.setOutputValueClass(Text.class);
-        xmlHakker.setReducerClass(CrawlerReducer.class);
+		if (isHadoop) {
+		    xmlHakker.setOutputKeyClass(Text.class);
+		    xmlHakker.setOutputValueClass(Text.class);
+		    xmlHakker.setReducerClass(CrawlerReducer.class);
+		} else {
+		    xmlHakker.setOutputKeyClass(Text.class);
+		    xmlHakker.setOutputValueClass(Text.class);
+		    xmlHakker.setReducerClass(CrawlerPigReducer.class);
+		}
 
         return xmlHakker.waitForCompletion(true);
     }

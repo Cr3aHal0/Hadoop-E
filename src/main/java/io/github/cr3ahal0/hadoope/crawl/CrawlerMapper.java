@@ -29,7 +29,7 @@ public class CrawlerMapper extends Mapper<LongWritable, Text, Text, Text> {
 
     @Override
     public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
-	String text = Text.decode(value.getBytes(), 0, value.getLength()-1);
+	String text = value.toString();
 	
         String[] halfes = text.split("\t");
 	/*System.out.println(text);
